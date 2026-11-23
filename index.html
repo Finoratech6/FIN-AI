@@ -2,30 +2,116 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>FINORA AI</title>
 <style>
-  :root { --bg: #0f0f11; --panel: #1e1e24; --text: #ececec; --accent: #3b82f6; --user-bg: #2b2b36; }
+  :root { 
+    --bg: #0f0f11; 
+    --panel: #1e1e24; 
+    --text: #ececec; 
+    --accent: #3b82f6; 
+    --user-bg: #2b2b36; 
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  
+  /* Gunakan 100dvh agar pas dengan layar HP (tidak tertutup address bar/navbar) */
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    height: 100dvh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+  }
   
   /* Header */
-  header { padding: 16px; background: var(--panel); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  header { 
+    padding: 16px; 
+    background: var(--panel); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 700; 
+    font-size: 18px; 
+    border-bottom: 1px solid rgba(255,255,255,0.05); 
+    padding-top: calc(16px + env(safe-area-inset-top)); /* Pengaman notch */
+  }
   header span { color: var(--accent); margin-right: 8px; }
 
   /* Area Chat */
-  #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
-  .message { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
-  .message.user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 4px; }
-  .message.ai { align-self: flex-start; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
-  .message.ai.loading::after { content: '...'; animation: blink 1s infinite; }
+  #chat-container { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+    scroll-behavior: smooth; 
+  }
+  .message { 
+    max-width: 85%; 
+    padding: 12px 16px; 
+    border-radius: 18px; 
+    font-size: 15px; 
+    line-height: 1.5; 
+    word-wrap: break-word; 
+    white-space: pre-wrap; 
+  }
+  .message.user { 
+    align-self: flex-end; 
+    background: var(--user-bg); 
+    border-bottom-right-radius: 4px; 
+  }
+  .message.ai { 
+    align-self: flex-start; 
+    background: transparent; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-bottom-left-radius: 4px; 
+  }
+  
+  /* Animasi Loading */
+  .message.ai.loading { color: #888; font-style: italic; }
+  .message.ai.loading::after { content: '...'; animation: blink 1.2s infinite; }
   @keyframes blink { 0% { opacity: .2; } 20% { opacity: 1; } 100% { opacity: .2; } }
 
   /* Input Area */
-  #input-area { padding: 16px; background: var(--panel); display: flex; gap: 8px; align-items: flex-end; }
-  #prompt-input { flex: 1; background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 12px 16px; border-radius: 24px; font-size: 15px; resize: none; max-height: 120px; outline: none; overflow-y: auto; }
+  #input-area { 
+    padding: 12px 16px; 
+    background: var(--panel); 
+    display: flex; 
+    gap: 8px; 
+    align-items: flex-end; 
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* Pengaman navigasi HP */
+  }
+  #prompt-input { 
+    flex: 1; 
+    background: var(--bg); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    color: var(--text); 
+    padding: 12px 16px; 
+    border-radius: 24px; 
+    font-size: 15px; 
+    resize: none; 
+    max-height: 120px; 
+    outline: none; 
+    overflow-y: auto; 
+  }
   #prompt-input::placeholder { color: #777; }
-  #send-btn { background: var(--accent); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+  
+  #send-btn { 
+    background: var(--accent); 
+    color: white; 
+    border: none; 
+    width: 44px; 
+    height: 44px; 
+    min-width: 44px; /* Mencegah gepeng */
+    border-radius: 50%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+    transition: 0.2s; 
+  }
   #send-btn:disabled { background: #333; cursor: not-allowed; }
   #send-btn svg { width: 20px; height: 20px; fill: currentColor; }
 </style>
@@ -46,7 +132,7 @@
 </div>
 
 <script>
-  // MASUKKAN API KEY GROQ ANDA DI SINI (Buat gratis di console.groq.com)
+  // MASUKKAN API KEY GROQ ANDA DI SINI
   const API_KEY = 'MASUKKAN_API_KEY_GROQ_ANDA_DI_SINI';
   const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -54,10 +140,10 @@
   const promptInput = document.getElementById('prompt-input');
   const sendBtn = document.getElementById('send-btn');
 
-  // Auto-resize textarea
+  // Auto-resize textarea saat diketik
   promptInput.addEventListener('input', () => {
     promptInput.style.height = 'auto';
-    promptInput.style.height = promptInput.scrollHeight + 'px';
+    promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
   });
 
   // Kirim pesan saat tekan Enter (tanpa Shift)
@@ -74,13 +160,19 @@
     const text = promptInput.value.trim();
     if (!text) return;
 
+    // Cek jika API Key belum diganti
+    if (API_KEY === 'MASUKKAN_API_KEY_GROQ_ANDA_DI_SINI') {
+      appendMessage('ai', '⚠️ Anda belum memasukkan API Key. Silakan edit file index.html dan masukkan API Key Groq Anda.');
+      return;
+    }
+
     // Tampilkan pesan user
     appendMessage('user', text);
     promptInput.value = '';
     promptInput.style.height = 'auto';
     
     // Tampilkan loading AI
-    const aiMsgDiv = appendMessage('ai loading', '');
+    const aiMsgDiv = appendMessage('ai loading', 'Finora AI sedang berpikir');
 
     try {
       const response = await fetch(API_URL, {
@@ -90,7 +182,7 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: "llama3-8b-8192", // Model cepat & gratis dari Groq
+          model: "llama3-8b-8192", 
           messages: [
             { role: "system", content: "Anda adalah asisten AI cerdas dari FinoraTech. Jawab dengan ramah, jelas, dan gunakan bahasa Indonesia." },
             { role: "user", content: text }
@@ -105,13 +197,15 @@
       const data = await response.json();
       const reply = data.choices[0].message.content;
 
+      // Hapus status loading dan tampilkan jawaban
       aiMsgDiv.classList.remove('loading');
       aiMsgDiv.textContent = reply;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
       
     } catch (error) {
       aiMsgDiv.classList.remove('loading');
-      aiMsgDiv.textContent = "Maaf, terjadi kesalahan jaringan atau API Key belum dimasukkan.";
-      aiMsgDiv.style.color = "#ef4444";
+      aiMsgDiv.textContent = "Maaf, terjadi kesalahan jaringan atau API Key salah. Pastikan koneksi internet stabil.";
+      aiMsgDiv.style.color = "#ef4444"; // Warna merah untuk error
     }
   }
 
