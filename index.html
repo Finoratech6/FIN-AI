@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FINORA AI</title>
+<style>
+  :root { --bg: #0f0f11; --panel: #1e1e24; --text: #ececec; --accent: #3b82f6; --user-bg: #2b2b36; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  
+  /* Header */
+  header { padding: 16px; background: var(--panel); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  header span { color: var(--accent); margin-right: 8px; }
 
+  /* Area Chat */
+  #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+  .message { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+  .message.user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 4px; }
+  .message.ai { align-self: flex-start; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
+  .message.ai.loading::after { content: '...'; animation: blink 1s infinite; }
+  @keyframes blink { 0% { opacity: .2; } 20% { opacity: 1; } 100% { opacity: .2; } }
+
+  /* Input Area */
+  #input-area { padding: 16px; background: var(--panel); display: flex; gap: 8px; align-items: flex-end; }
+  #prompt-input { flex: 1; background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 12px 16px; border-radius: 24px; font-size: 15px; resize: none; max-height: 120px; outline: none; overflow-y: auto; }
+  #prompt-input::placeholder { color: #777; }
+  #send-btn { background: var(--accent); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+  #send-btn:disabled { background: #333; cursor: not-allowed; }
+  #send-btn svg { width: 20px; height: 20px; fill: currentColor; }
+</style>
+</head>
+<body>
+
+<header><span>✦</span> FINORA AI</header>
+
+<div id="chat-container">
+  <div class="message ai">Halo! Saya Finora AI. Ada yang bisa saya bantu hari ini?</div>
+</div>
+
+<div id="input-area">
+  <textarea id="prompt-input" rows="1" placeholder="Tanya sesuatu..."></textarea>
+  <button id="send-btn">
+    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</div>
+
+<script>
+  // MASUKKAN API KEY GROQ ANDA DI SINI (Buat gratis di console.groq.com)
+  const API_KEY = 'MASUKKAN_API_KEY_GROQ_ANDA_DI_SINI';
+  const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+  const chatContainer = document.getElementById('chat-container');
+  const promptInput = document.getElementById('prompt-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // Auto-resize textarea
+  promptInput.addEventListener('input', () => {
+    promptInput.style.height = 'auto';
+    promptInput.style.height = promptInput.scrollHeight + 'px';
+  });
+
+  // Kirim pesan saat tekan Enter (tanpa Shift)
+  promptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  async function sendMessage() {
+    const text = promptInput.value.trim();
+    if (!text) return;
+
+    // Tampilkan pesan user
+    appendMessage('user', text);
+    promptInput.value = '';
+    promptInput.style.height = 'auto';
+    
+    // Tampilkan loading AI
+    const aiMsgDiv = appendMessage('ai loading', '');
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: "llama3-8b-8192", // Model cepat & gratis dari Groq
+          messages: [
+            { role: "system", content: "Anda adalah asisten AI cerdas dari FinoraTech. Jawab dengan ramah, jelas, dan gunakan bahasa Indonesia." },
+            { role: "user", content: text }
+          ],
+          temperature: 0.7,
+          max_tokens: 1024
+        })
+      });
+
+      if (!response.ok) throw new Error('API Error');
+
+      const data = await response.json();
+      const reply = data.choices[0].message.content;
+
+      aiMsgDiv.classList.remove('loading');
+      aiMsgDiv.textContent = reply;
+      
+    } catch (error) {
+      aiMsgDiv.classList.remove('loading');
+      aiMsgDiv.textContent = "Maaf, terjadi kesalahan jaringan atau API Key belum dimasukkan.";
+      aiMsgDiv.style.color = "#ef4444";
+    }
+  }
+
+  function appendMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.textContent = text;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return div;
+  }
+</script>
+</body>
+</html>
